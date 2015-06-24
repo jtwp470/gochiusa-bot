@@ -17,7 +17,7 @@ hands1 = [[":1man:", ":2man:", ":3man:", ":4man:", ":5man:", ":6man:", ":7man:",
 [":1pin:",":2pin:",":3pin:",":4pin:",":5pin:",":6pin:",":7pin:",":8pin:",":9pin:"],]
 
 #赤ドラ
-redhands = ["5mana","5soa","5pina"]
+redhands = [":5mana:",":5soa:",":5pina:"]
 
 
 # 10の位を切り上げ
