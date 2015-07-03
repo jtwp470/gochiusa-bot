@@ -7,7 +7,6 @@
 #
 # Documentation:
 #  麻雀の役を登録するルールとして雀頭が予め登録してあり面子4つと組み合わせて出力することにします.
-#  きちんと考えて書かないと字牌が5個とか出てしまうので考えてかいてください. (特に順子を追加するとき)
 #
 
 module.exports = (robot) ->
@@ -27,12 +26,17 @@ module.exports = (robot) ->
     # 鳴いたかどうか確かめる．一発，鳴いちゃった罵倒判定に使用
     naita = false
 
+    # 槓子の個数
+    kantsu = 0
+
     # 0からiまでの数をランダムに生成する関数randNum
     randNum = (i) ->
       Math.floor(Math.random() * i)
 
-    # 0から33までの値を受け取ると対応する牌を返す関数int2hai
-    # 5の牌に関しては，適当に1つだけ赤ドラを出す
+    ###
+    * 0から33までの値を受け取ると対応する牌を返す関数int2hai
+    * 5の牌に関しては，適当に1つだけ赤ドラを出す
+    ###
     int2hai = (n) ->
       switch n
         when 0 then return ":1man:"
@@ -87,30 +91,29 @@ module.exports = (robot) ->
         when 4 then return ":5soa:"
         when 5 then return ":5pina:"
 
-    ### ---------------------------------------
-    # 七対子の実装
-    # 適当に7種類選び，出力するだけ
+    ###
+    * 七対子の実装
+    * 適当に7種類選び，出力するだけ
     ###
     toitsu7 = ->
       str = ""
       for i in [0 .. 6]
         # 使ってない牌を探す
         while true
-          j = randNum 34
+          j = randNum(34)
           if count[j] == 0
             break
         count[j]++
         str += int2hai(j) + int2hai(j) + " "
       return str
-    # -----------------------------------------
 
-    ### ---------------------------------------
-    # 国士無双の実装
-    # tは2枚使う牌を指定
-    # ychは使用牌の集合
+    ###
+    * 国士無双の実装
+    * tは2枚使う牌を指定
+    * ychは使用牌の集合
     ###
     kokushi = ->
-      t = randNum 13
+      t = randNum(13)
       ych = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]
       str = ""
       for i in [0 .. 12]
@@ -119,31 +122,28 @@ module.exports = (robot) ->
         else
           str += int2hai(ych[i])
       return str
-    # -----------------------------------------
 
-    ### ---------------------------------------
-    # 4面子1雀頭の生成
-    # 雀頭を設定した後，順子か刻子を4個後ろにつける
-    # それぞれの確率
-    # 順子：刻子 = 1 : 1
+    ###
+    * 4面子1雀頭の生成
+    * 雀頭を設定した後，順子か刻子を4個後ろにつける
+    * 順子：刻子 = 1 : 1
     ###
     normal = ->
       str = ""
       # 雀頭の生成
-      head = randNum 34
+      head = randNum(34)
       count[head] += 2
       str += int2hai(head) + int2hai(head) + " "
       # 面子を4つ作る
       for i in [0 .. 3]
         # 順子にするか，刻子にするか
-        j = randNum 2
+        j = randNum(2)
         if j == 0
           mentsu = kotsu()
         else
           mentsu = shuntsu()
-        # 順子の場合，鳴く確率は1/5
-        # 刻子の場合，鳴く確率は1/3
-        if (randNum (2 * j + 3)) == 0
+        # 順子の場合，鳴く確率は1/5．刻子の場合，鳴く確率は1/3
+        if (randNum(2 * j + 3)) == 0
           naita = true
           str += "(" + mentsu + ") "
         else
@@ -152,7 +152,7 @@ module.exports = (robot) ->
 
     shuntsu = ->
       while true
-        i = randNum 21
+        i = randNum(21)
         i += (Math.floor(i / 7)) * 2
         if (count[i] < 4 and count[i + 1] < 4 and count[i + 2] < 4)
           break
@@ -163,39 +163,60 @@ module.exports = (robot) ->
 
     kotsu = ->
       while true
-        i = randNum 34
+        i = randNum(34)
         if count[i] < 2
           break
       # 牌が1枚も使われていないとき，20%の確率で槓子になる
-      if count[i] == 0 and (randNum 5) == 0
+      if count[i] == 0 and (randNum(5)) == 0
         count[i] += 4
+        kantsu++
         return "[" + int2hai(i) + int2hai(i) + int2hai(i) + int2hai(i) + "]"
       count[i] += 3
       return int2hai(i) + int2hai(i) + int2hai(i)
-    # -----------------------------------------
+
+    # ドラの生成
+    makeDora = ->
+      while true
+        i = randNum(34)
+        if count[i] < 4
+          break
+      count[i]++
+      return int2hai(i)
+
+    # 槓ドラ，裏ドラ
+    addDora = ->
+      str = "追加ドラ"
+      if !naita
+        for i in [0 .. kantsu]
+          str += makeDora()
+      for i in [0 ... kantsu]
+        str += makeDora()
+      return str
 
     # ドラ，風を表示する
-    init = ->
-      dora = randNum 34
-      count[dora]++
-      return "ドラ表示" + int2hai(dora) + " 場風" + int2hai((randNum 4) + 30) + " 自風" + int2hai((randNum 4) + 30)
+    kaze_and_firstDora = ->
+      return "ドラ表示" + makeDora() + " 場風" + int2hai((randNum(4)) + 30) + " 自風" + int2hai((randNum(4)) + 30)
 
-    # main
-    # 1%で国士無双，5%で七対子，94%でその他
-    # チノちゃん風にコメントを出す
-    # 鳴いた場合，33%の確率で罵倒される
-    # 鳴かない場合，10%の確率で一発
-    msg.send "#{init()}"
-    n = randNum 100
+    ###
+    * main
+    * 1%で国士無双，5%で七対子，94%でその他
+    * チノちゃん風にコメントを出す
+    * 鳴いた場合，33%の確率で罵倒される
+    * 鳴かない場合，10%の確率で一発
+    ###
+    msg.send "#{kaze_and_firstDora()}"
+    n = randNum(100)
     if n < 1
       msg.send "#{kokushi()}"
     else if n < 6
       msg.send "#{toitsu7()}"
     else
       msg.send "#{normal()}"
-      if naita and (randNum 3) == 0
+      if (!naita or kantsu > 0)
+        msg.send "#{addDora()}"
+      if naita and (randNum(3)) == 0
         msg.send "何で鳴いちゃったんですか? バカなんですか?"
-    if !naita and (randNum 10) == 0
+    if !naita and (randNum(10)) == 0
       msg.send "一発ですよ! すごい!"
 
 
