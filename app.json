@@ -17,7 +17,7 @@
     },
     "buildpacks": [
         {
-            "url": "heroku/nodejs"
+            "url": "https://github.com/ddollar/heroku-buildpack-multi.git"
         }
     ],
     "addons": [
